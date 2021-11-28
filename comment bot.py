@@ -1,5 +1,8 @@
 from configparser import ConfigParser
 import praw
+import re
+
+PAY_CMD = r"!pay (\d+)"
 
 def main():
     # Get user agent, client id, secret, username, and password from ini file
@@ -18,11 +21,27 @@ def main():
         username=userinfo["username"],
         password=userinfo["password"]
     )
+
+    # Compile regular expression
+    pay_re = re.compile(PAY_CMD)
     
     # Continuously cycle through comments
     subreddits = reddit.subreddit(redditinfo["subreddits"])
-    for comment in subreddits.stream.comments():
-        print(comment.body)
+    for comment in subreddits.stream.comments(skip_existing=True):
+        command(comment, pay_re)
+
+def command(comment, pay_re):
+    # Get comment text
+    text = comment.body.lower()
+    
+    # Find the first match
+    pay_match = pay_re.search(text)
+
+    # Check if there is a match
+    if pay_match is not None:
+        amount = pay_match.group(1)
+        destination = comment.submission.author.name
+        comment.reply(f'INVOICE FOR {amount} to {destination}')
 
 if __name__ == "__main__":
     main()
