@@ -1,6 +1,7 @@
 from configparser import ConfigParser
 import praw
 import re
+import sqlite3
 
 BALANCE_CMD = r"balance"
 WITHDRAW_CMD = r"withdraw (\d+)"

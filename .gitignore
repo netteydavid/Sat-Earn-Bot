@@ -138,4 +138,7 @@ dmypy.json
 cython_debug/
 
 # Personal Config
+components/config.ini
+components/satearn.db
 config.ini
+satearn.db
