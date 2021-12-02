@@ -50,7 +50,7 @@ def updateBalance(redditor, amount):
     if old_balance == None:
         cur.execute(f'INSERT INTO Balances VALUES (\'{redditor}\', {amount})')
     else:
-        cur.execute(f'UPDATE Balances SET Balance = {old_balance + amount} WHERE User = \'{redditor}\'')
+        cur.execute(f'UPDATE Balances SET Balance = {old_balance[0] + amount} WHERE User = \'{redditor}\'')
     con.commit()
     con.close()
     return
@@ -69,18 +69,40 @@ def checkInvoices(reddit):
     for invoice in invoices:
         tx = LNPayLnTx(invoice[0])
         info = tx.get_info()
+        comment: praw.reddit.models.Comment = reddit.comment(invoice[1])
         if info["settled"] == 1:
-            comment = reddit.comment(invoice[1])
+            print(f'Invoice {info["id"]} settled!')
             payee = comment.parent().author.name
             # Update balance
             updateBalance(payee, invoice[2])
+            print("Balance updated")
             # Remove the invoice
             removeInvoice(invoice[0])
+            print("Invoice removed")
 
-            reply = [r for r in comment.replies if s.author.name == "satearn_bot"][0]
+            # Get the first reply
+            comment.refresh()
+            reply = [r for r in comment.replies if r.author.name == "satearn_bot"]
 
-            # Edit the comment
-            reply.edit(f'{comment.author.name} has paid {payee} {invoice[2]} sats!')
+            if len(reply) > 0:
+                # Edit the comment
+                reply[0].edit(f'/u/{comment.author.name} has paid /u/{payee} {invoice[2]} sats!')
+                print("Comment edited")
+
+        elif info["expires_at"] <= int(time.time()):
+            print(f'Invoice {info["id"]} expired!')
+            # Remove the invoice
+            removeInvoice(invoice[0])
+            print("Invoice removed")
+
+            # Get the first reply
+            comment.refresh()
+            reply = [r for r in comment.replies if r.author.name == "satearn_bot"]
+            
+            if len(reply) > 0:
+                # Edit the comment
+                reply[0].edit(f'Invoice Expired.')
+                print("Comment edited")
     return
 
 

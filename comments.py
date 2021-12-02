@@ -20,6 +20,8 @@ def main():
     redditinfo = config_obj["REDDITINFO"]
     lnpayinfo = config_obj["LNPAYINFO"]
 
+    print("Got config info")
+
     # Get Reddit
     reddit = praw.Reddit(
         user_agent=apiinfo["user_agent"], 
@@ -29,11 +31,15 @@ def main():
         password=userinfo["password"]
     )
 
+    print("Created reddit object")
+
     # Compile regular expression
     pay_re = re.compile(PAY_CMD)
 
     # Initilize LNPay
     lnpay_py.initialize(lnpayinfo["public_key"])
+
+    print("LNPay initialized with public key")
     
     # Continuously cycle through comments
     subreddits = reddit.subreddit(redditinfo["subreddits"])
@@ -53,10 +59,14 @@ def command(comment: praw.reddit.models.Comment, pay_re: Pattern[str], invoice_k
         amount = int(pay_match.group(1))
         # Add fee
         amount_plus_fee = math.ceil(amount * FEE_MULTIPLIER)
+        
+        print(f'Pay match on comment {comment.id}. Amount = {amount}, plus fee = {amount_plus_fee}')
 
         # Get payer and payee
         payer = comment.author.name
         payee = comment.parent().author.name
+
+        print(f'{payer} -> {payee}')
 
         # Get the wallet
         se_wallet = LNPayWallet(invoice_key)
@@ -69,8 +79,12 @@ def command(comment: praw.reddit.models.Comment, pay_re: Pattern[str], invoice_k
         # TODO: Host my own QR code generator
         comment.reply(f'Lightning Invoice: >!{invoice["payment_request"]}!< \n\n[Pay Invoice via QR Code](https://api.qrserver.com/v1/create-qr-code/?data={invoice["payment_request"]})')
 
+        print("Invoice posted")
+
         # Record invoice and comment
         addInvoice(invoice["id"], comment.id, amount)
+
+        print("Invoice saved and pending")
 
 
 def addInvoice(invoice: str,  comment: str, amount: int):
