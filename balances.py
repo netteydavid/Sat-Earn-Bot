@@ -25,6 +25,7 @@ def main():
         username=userinfo["username"],
         password=userinfo["password"]
     )
+    reddit.validate_on_submit = True
 
     lnpay_py.initialize(lnpayinfo["public_key"])
 
