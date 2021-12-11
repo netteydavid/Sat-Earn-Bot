@@ -8,7 +8,6 @@ import math
 import sqlite3
 
 PAY_CMD = r"!pay (\d+)"
-FEE_MULTIPLIER = 1.005
 
 def main():
     # Get user agent, client id, secret, username, and password from ini file
@@ -57,10 +56,8 @@ def command(comment: praw.reddit.models.Comment, pay_re: Pattern[str], invoice_k
     if pay_match is not None:
         # Get amount
         amount = int(pay_match.group(1))
-        # Add fee
-        amount_plus_fee = math.ceil(amount * FEE_MULTIPLIER)
         
-        print(f'Pay match on comment {comment.id}. Amount = {amount}, plus fee = {amount_plus_fee}')
+        print(f'Pay match on comment {comment.id}. Amount = {amount}')
 
         # Get payer and payee
         payer = comment.author.name
@@ -72,7 +69,7 @@ def command(comment: praw.reddit.models.Comment, pay_re: Pattern[str], invoice_k
         se_wallet = LNPayWallet(invoice_key)
 
         # Get invoice
-        invoice_params = { 'num_satoshis': amount_plus_fee, 'memo': f'{payer} to {payee}', 'expiry': 1200 }
+        invoice_params = { 'num_satoshis': amount, 'memo': f'{payer} to {payee}', 'expiry': 1200 }
         invoice = se_wallet.create_invoice(invoice_params)
 
         # Reply
